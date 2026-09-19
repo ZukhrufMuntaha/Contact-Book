@@ -475,7 +475,7 @@
       </div>
     </div>
     <div class="panel" id="list"></div>
-    <p class="note">Contacts are saved in this browser on this device.</p>
+    <p class="note">Private by design: your contacts are stored only in this browser, on this device.</p>
   </section>
 </main>
 
@@ -578,18 +578,26 @@
 
     if (!p) {
       errors.phone = 'Enter a phone number.';
-    } else if (!/^\+?[\d\s\-().]+$/.test(p)) {
-      errors.phone = 'Use digits, spaces, dashes or brackets, with an optional + at the start.';
     } else {
-      var d = digitsOf(p);
-      if (d.length < 7 || d.length > 15) {
-        errors.phone = 'A phone number needs 7 to 15 digits.';
+      var norm = normalizePhone(p);
+      if (!norm) {
+        errors.phone = 'Use 11 digits like 0300 1234567, or + followed by 12 digits like +923001234567.';
       } else {
-        var dup = contacts.find(function (c) { return c.id !== ignoreId && digitsOf(c.phone) === d; });
+        var dup = contacts.find(function (c) { return c.id !== ignoreId && phoneKey(c.phone) === norm.key; });
         if (dup) errors.phone = dup.name + ' is already saved with this number.';
       }
     }
     return errors;
+  }
+  function normalizePhone(v) {
+    var s = v.replace(/[\s-]/g, '');
+    if (/^\d{11}$/.test(s)) return { display: s.slice(0, 4) + ' ' + s.slice(4), key: s };
+    if (/^\+\d{12}$/.test(s)) return { display: s, key: /^\+92/.test(s) ? '0' + s.slice(3) : s };
+    return null;
+  }
+  function phoneKey(v) {
+    var n = normalizePhone(v);
+    return n ? n.key : digitsOf(v);
   }
   function showError(input, errEl, msg) {
     errEl.textContent = msg || '';
@@ -627,7 +635,7 @@
     if (errs.name) { nameIn.focus(); return; }
     if (errs.phone) { phoneIn.focus(); return; }
 
-    var c = { id: uid(), name: cleanName(nameIn.value), phone: phoneIn.value.trim(), createdAt: Date.now() };
+    var c = { id: uid(), name: cleanName(nameIn.value), phone: normalizePhone(phoneIn.value).display, createdAt: Date.now() };
     contacts.unshift(c);
     persist();
     query = '';
@@ -711,7 +719,7 @@
       if (errs.name) { nameI.focus(); return; }
       if (errs.phone) { phoneI.focus(); return; }
       c.name = cleanName(nameI.value);
-      c.phone = phoneI.value.trim();
+      c.phone = normalizePhone(phoneI.value).display;
       persist();
       editingId = null;
       render();

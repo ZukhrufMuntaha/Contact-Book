@@ -1,42 +1,37 @@
 # Contact Book
 
-A simple, responsive web app to save names and phone numbers. Add contacts with the form, then view, search, edit and delete them in the list below.
+A simple and responsive contact management web app for saving and organizing names and phone numbers. Add a contact, search your saved contacts, and easily edit or delete them whenever needed.
 
-Plain HTML, CSS and JavaScript in a single file. No build step, no dependencies.
+**Live Demo:** [Contact Book](https://contact-book-git-main-self-0545.vercel.app/)
 
 ## Features
 
-- Add a contact with full name and phone number
-- Validation with clear error messages, including duplicate number detection
-- Search by name or number
-- Edit in place (`Enter` to save, `Esc` to cancel)
-- Delete with a 6-second Undo
-- Works on mobile and desktop, with automatic light and dark mode
+* Add contacts with a full name and phone number
+* Validate Pakistani phone number formats
+* Detect duplicate phone numbers
+* Search contacts by name or number
+* Edit existing contacts
+* Delete contacts with an undo option
+* Responsive design for mobile and desktop
+* Automatic light and dark mode
 
-## Run locally
+## Phone Number Format
 
-Open `index.html` in your browser.
+The app supports these phone number formats:
 
-## Deploy to Vercel
+* `0300 1234567`
+* `+923001234567`
 
-1. Push this folder to GitHub.
-2. Import the repo at [vercel.com/new](https://vercel.com/new).
-3. Set **Framework Preset** to **Other**, leave build settings empty, and click **Deploy**.
+## Data Storage
 
-Or with the CLI:
+Contacts are stored using your browser's `localStorage`. Your saved contacts remain available after refreshing the page, but they stay on the same browser and device and are not shared with other users.
 
-```bash
-npm i -g vercel
-vercel --prod
-```
+## Tech Stack
 
-## Data storage
+Built with:
 
-Contacts are saved in the browser's `localStorage`. They persist after a refresh, but stay on that device and browser and are not shared between users.
+* HTML
+* CSS
+* JavaScript
 
-## Structure
-
-```
-├── index.html
-└── README.md
-```
+No frameworks, backend, or external dependencies are required.
