@@ -1,0 +1,793 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Contact book</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=Figtree:wght@400..700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #F2F1F8;
+    --surface: #FFFFFF;
+    --surface-2: #F8F7FC;
+    --text: #1D1B45;
+    --muted: #5F5E86;
+    --line: #DEDCEE;
+    --line-strong: #B9B7DC;
+    --hover: #EDECF8;
+    --band: #2B2A6B;
+    --band-text: #FFFFFF;
+    --band-muted: #CFCEF2;
+    --band-border: #7A79C4;
+    --band-error: #FFB9BC;
+    --band-focus: #FFD470;
+    --input-bg: #FFFFFF;
+    --input-text: #1D1B45;
+    --accent: #F2B632;
+    --accent-hover: #FFC94D;
+    --accent-text: #1D1B45;
+    --danger: #B3363B;
+    --danger-bg: #FBE9EA;
+    --focus: #4B47D6;
+    --flash: #FFF1C9;
+    --toast-bg: #1D1B45;
+    --toast-text: #FFFFFF;
+    --toast-action: #FFD470;
+    --av0-bg: #E1E0FA; --av0-fg: #2B2A6B;
+    --av1-bg: #FCEBC0; --av1-fg: #6B4A00;
+    --av2-bg: #CFEDE6; --av2-fg: #0F5A4B;
+    --av3-bg: #F8DCE2; --av3-fg: #8A2440;
+    --av4-bg: #DCEBD0; --av4-fg: #2F5A17;
+    --err: var(--danger);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #11112A;
+      --surface: #1B1B3D;
+      --surface-2: #212147;
+      --text: #ECEBFA;
+      --muted: #A3A2CC;
+      --line: #30305E;
+      --line-strong: #4A4A86;
+      --hover: #27274F;
+      --band: #26265C;
+      --input-bg: #12122B;
+      --input-text: #ECEBFA;
+      --danger: #FF8A8E;
+      --danger-bg: #3A1E2E;
+      --focus: #A5A2FF;
+      --flash: #4A3D14;
+      --toast-bg: #ECEBFA;
+      --toast-text: #1D1B45;
+      --toast-action: #3B36B8;
+      --av0-bg: #33336E; --av0-fg: #D9D8FF;
+      --av1-bg: #4A3A10; --av1-fg: #FFD470;
+      --av2-bg: #123F38; --av2-fg: #9BE6D3;
+      --av3-bg: #4A2130; --av3-fg: #FFB7C8;
+      --av4-bg: #26401A; --av4-fg: #BFE6A0;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #11112A;
+    --surface: #1B1B3D;
+    --surface-2: #212147;
+    --text: #ECEBFA;
+    --muted: #A3A2CC;
+    --line: #30305E;
+    --line-strong: #4A4A86;
+    --hover: #27274F;
+    --band: #26265C;
+    --input-bg: #12122B;
+    --input-text: #ECEBFA;
+    --danger: #FF8A8E;
+    --danger-bg: #3A1E2E;
+    --focus: #A5A2FF;
+    --flash: #4A3D14;
+    --toast-bg: #ECEBFA;
+    --toast-text: #1D1B45;
+    --toast-action: #3B36B8;
+    --av0-bg: #33336E; --av0-fg: #D9D8FF;
+    --av1-bg: #4A3A10; --av1-fg: #FFD470;
+    --av2-bg: #123F38; --av2-fg: #9BE6D3;
+    --av3-bg: #4A2130; --av3-fg: #FFB7C8;
+    --av4-bg: #26401A; --av4-fg: #BFE6A0;
+  }
+
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background: var(--bg);
+    color: var(--text);
+    font-family: "Figtree", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-size: 1rem;
+    line-height: 1.5;
+  }
+  h1, h2 {
+    font-family: "Bricolage Grotesque", "Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
+    margin: 0;
+  }
+  button, input { font: inherit; color: inherit; }
+  :focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+  .band :focus-visible { outline-color: var(--band-focus); }
+
+  .sr-only {
+    position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+    overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0;
+  }
+  .wrap {
+    width: 100%;
+    max-width: 920px;
+    margin: 0 auto;
+    padding-inline: clamp(16px, 4vw, 32px);
+  }
+
+  /* Header band with the form */
+  .band {
+    --err: var(--band-error);
+    background: var(--band);
+    color: var(--band-text);
+    padding-block: clamp(28px, 6vw, 56px) clamp(28px, 4vw, 40px);
+  }
+  .band h1 {
+    font-size: clamp(2.25rem, 6vw, 3.75rem);
+    font-weight: 800;
+    letter-spacing: -0.035em;
+    line-height: 1;
+  }
+  .lead {
+    margin: 14px 0 28px;
+    max-width: 52ch;
+    color: var(--band-muted);
+    font-size: 1.0625rem;
+  }
+  form {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+    gap: 16px;
+    align-items: start;
+  }
+  .field label {
+    display: block;
+    height: 1.25rem;
+    line-height: 1.25rem;
+    margin-bottom: 0.4rem;
+    font-size: 0.9375rem;
+    font-weight: 600;
+  }
+  .submit { padding-top: 1.65rem; }
+
+  .input {
+    width: 100%;
+    height: 46px;
+    padding: 0 14px;
+    background: var(--input-bg);
+    color: var(--input-text);
+    border: 1.5px solid var(--band-border);
+    border-radius: 10px;
+    font-size: 1rem;
+    transition: border-color .15s ease;
+  }
+  .input::placeholder { color: #8A89AD; opacity: 1; }
+  .input:hover { border-color: var(--band-focus); }
+  .input[aria-invalid="true"] { border-color: var(--err); border-width: 2px; padding: 0 13.5px; }
+  .panel .input, .list-head .input { border-color: var(--line-strong); }
+  .panel .input:hover, .list-head .input:hover { border-color: var(--focus); }
+  .panel .input { height: 42px; }
+  .panel .input[aria-invalid="true"], .list-head .input[aria-invalid="true"] { border-color: var(--err); }
+
+  .error {
+    margin: 6px 2px 0;
+    min-height: 0;
+    color: var(--err);
+    font-size: 0.875rem;
+    font-weight: 500;
+    line-height: 1.3;
+  }
+  .error:empty { display: none; }
+
+  .btn-primary {
+    height: 46px;
+    padding: 0 28px;
+    border: 0;
+    border-radius: 10px;
+    background: var(--accent);
+    color: var(--accent-text);
+    font-family: "Bricolage Grotesque", "Figtree", system-ui, sans-serif;
+    font-size: 1.0625rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background .15s ease, transform .08s ease;
+    white-space: nowrap;
+  }
+  .btn-primary:hover { background: var(--accent-hover); }
+  .btn-primary:active { transform: translateY(1px); }
+
+  /* List */
+  main { padding-bottom: 72px; }
+  .list-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin: 36px 0 14px;
+  }
+  .list-head h2 {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 1.625rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+  .list-head h2:focus { outline: none; }
+  .list-head h2:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; border-radius: 6px; }
+  .count {
+    display: inline-grid;
+    place-items: center;
+    min-width: 28px;
+    height: 28px;
+    padding: 0 9px;
+    border-radius: 999px;
+    background: var(--text);
+    color: var(--bg);
+    font-family: "Figtree", system-ui, sans-serif;
+    font-size: 0.875rem;
+    font-weight: 700;
+  }
+  .search { flex: 0 1 320px; min-width: 200px; }
+  .search .input { height: 42px; }
+
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    overflow: hidden;
+  }
+  .head-row, .row {
+    display: grid;
+    grid-template-columns: 44px minmax(0, 1.2fr) minmax(0, 1fr) 176px;
+    column-gap: 16px;
+    align-items: center;
+    padding: 12px 20px;
+  }
+  .head-row {
+    background: var(--surface-2);
+    border-bottom: 1px solid var(--line);
+    color: var(--muted);
+    font-size: 0.875rem;
+    font-weight: 600;
+    padding-block: 10px;
+  }
+  .head-row span:nth-child(2) { grid-column: 2; }
+  .head-row span:nth-child(3) { grid-column: 3; }
+  ul.rows { list-style: none; margin: 0; padding: 0; }
+  .row + .row { border-top: 1px solid var(--line); }
+  .row:hover { background: var(--hover); }
+  .row.editing:hover { background: transparent; }
+  .row.just-added { animation: flash 1.8s ease-out; }
+  @keyframes flash { from { background: var(--flash); } to { background: transparent; } }
+
+  .avatar {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    font-family: "Bricolage Grotesque", "Figtree", system-ui, sans-serif;
+    font-size: 1.1875rem;
+    font-weight: 700;
+    grid-area: av;
+  }
+  .av-0 { background: var(--av0-bg); color: var(--av0-fg); }
+  .av-1 { background: var(--av1-bg); color: var(--av1-fg); }
+  .av-2 { background: var(--av2-bg); color: var(--av2-fg); }
+  .av-3 { background: var(--av3-bg); color: var(--av3-fg); }
+  .av-4 { background: var(--av4-bg); color: var(--av4-fg); }
+
+  .row { grid-template-areas: "av name phone act"; }
+  .row.editing {
+    grid-template-columns: 44px minmax(0, 1fr) auto;
+    grid-template-areas: "av fields act";
+    align-items: start;
+  }
+  .name {
+    grid-area: name;
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .phone {
+    grid-area: phone;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+    text-decoration: none;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    width: fit-content;
+    max-width: 100%;
+  }
+  .phone:hover { color: var(--text); text-decoration: underline; text-underline-offset: 3px; }
+  .actions {
+    grid-area: act;
+    display: flex;
+    justify-content: flex-end;
+    gap: 4px;
+  }
+  .row.editing .avatar { margin-top: 0; }
+  .row.editing .actions { padding-top: 3px; }
+  .fields {
+    grid-area: fields;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 12px;
+    align-items: start;
+  }
+
+  .btn-ghost, .btn-solid {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 36px;
+    padding: 0 12px;
+    border: 0;
+    border-radius: 8px;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background .15s ease, color .15s ease;
+  }
+  .btn-ghost { background: transparent; color: var(--text); }
+  .btn-ghost:hover { background: var(--line); }
+  .btn-ghost.danger { color: var(--danger); }
+  .btn-ghost.danger:hover { background: var(--danger-bg); }
+  .btn-solid { background: var(--band); color: #FFFFFF; }
+  .btn-solid:hover { filter: brightness(1.15); }
+  .btn-ghost svg, .btn-solid svg { flex: none; }
+
+  .empty { padding: 44px 20px; text-align: center; }
+  .empty-title { margin: 0 0 4px; font-size: 1.125rem; font-weight: 700; }
+  .empty-text { margin: 0 auto; max-width: 40ch; color: var(--muted); }
+
+  .note { margin: 16px 4px 0; color: var(--muted); font-size: 0.875rem; }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    left: 50%;
+    bottom: 20px;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    max-width: calc(100vw - 32px);
+    padding: 12px 14px 12px 18px;
+    border-radius: 12px;
+    background: var(--toast-bg);
+    color: var(--toast-text);
+    font-weight: 500;
+    box-shadow: 0 8px 28px rgba(15, 12, 60, .28);
+    opacity: 0;
+    visibility: hidden;
+    transform: translate(-50%, 16px);
+    transition: opacity .2s ease, transform .2s ease, visibility 0s linear .2s;
+  }
+  .toast.show {
+    opacity: 1;
+    visibility: visible;
+    transform: translate(-50%, 0);
+    transition: opacity .2s ease, transform .2s ease, visibility 0s;
+  }
+  .toast-btn {
+    border: 0;
+    background: transparent;
+    color: var(--toast-action);
+    font-weight: 700;
+    padding: 4px 8px;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+  .toast-btn:hover { text-decoration: underline; text-underline-offset: 3px; }
+  .toast :focus-visible { outline-color: var(--toast-action); }
+
+  /* Responsive */
+  @media (max-width: 719px) {
+    form { grid-template-columns: 1fr; }
+    .submit { padding-top: 4px; }
+    .btn-primary { width: 100%; }
+  }
+  @media (min-width: 640px) and (max-width: 859px) {
+    .row.editing {
+      grid-template-columns: 44px minmax(0, 1fr);
+      grid-template-areas: "av fields" ". act";
+      row-gap: 12px;
+    }
+    .row.editing .actions { padding-top: 0; }
+  }
+  @media (max-width: 639px) {
+    .head-row { display: none; }
+    .row {
+      grid-template-columns: 44px minmax(0, 1fr) auto;
+      grid-template-areas: "av name act" "av phone act";
+      column-gap: 14px;
+      row-gap: 0;
+      padding: 12px 14px;
+    }
+    .row.editing {
+      grid-template-columns: 44px minmax(0, 1fr);
+      grid-template-areas: "av fields" "act act";
+      row-gap: 12px;
+    }
+    .row.editing .actions { justify-content: flex-end; padding-top: 0; }
+    .fields { grid-template-columns: 1fr; }
+    .row:not(.editing) .btn-label { display: none; }
+    .row:not(.editing) .btn-ghost { width: 40px; height: 40px; padding: 0; justify-content: center; }
+    .list-head { margin-top: 28px; }
+    .search { flex: 1 1 100%; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .row.just-added { animation: none; }
+    .toast, .toast.show { transition: none; }
+    .btn-primary:active { transform: none; }
+  }
+</style>
+</head>
+<body>
+
+<header class="band">
+  <div class="wrap">
+    <h1>Contact book</h1>
+    <p class="lead">Add a name and phone number. Saved contacts appear below, where you can edit or delete them.</p>
+
+    <form id="add-form" novalidate>
+      <div class="field">
+        <label for="name">Full name</label>
+        <input class="input" id="name" name="name" type="text" autocomplete="name" placeholder="Ayesha Khan" aria-describedby="name-error" aria-invalid="false">
+        <p class="error" id="name-error"></p>
+      </div>
+      <div class="field">
+        <label for="phone">Phone number</label>
+        <input class="input" id="phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="0300 1234567" aria-describedby="phone-error" aria-invalid="false">
+        <p class="error" id="phone-error"></p>
+      </div>
+      <div class="submit">
+        <button class="btn-primary" type="submit">Save contact</button>
+      </div>
+    </form>
+  </div>
+</header>
+
+<main class="wrap">
+  <section aria-labelledby="list-title">
+    <div class="list-head">
+      <h2 id="list-title" tabindex="-1">Saved contacts <span class="count" id="count">0</span></h2>
+      <div class="search" id="search-wrap" hidden>
+        <label class="sr-only" for="search">Search contacts</label>
+        <input class="input" id="search" type="search" placeholder="Search by name or number" autocomplete="off">
+      </div>
+    </div>
+    <div class="panel" id="list"></div>
+    <p class="note">Contacts are saved in this browser on this device.</p>
+  </section>
+</main>
+
+<div class="toast" id="toast"></div>
+<div class="sr-only" id="sr-live" role="status" aria-live="polite"></div>
+
+<script>
+(function () {
+  'use strict';
+
+  var KEY = 'contact-book:v1';
+  var memoryStore = null;
+
+  function $(sel) { return document.querySelector(sel); }
+
+  function h(tag, props) {
+    var el = document.createElement(tag);
+    props = props || {};
+    Object.keys(props).forEach(function (k) {
+      var v = props[k];
+      if (k === 'class') el.className = v;
+      else if (k.indexOf('on') === 0) el.addEventListener(k.slice(2), v);
+      else if (v === true) el.setAttribute(k, '');
+      else if (v !== false && v != null) el.setAttribute(k, v);
+    });
+    for (var i = 2; i < arguments.length; i++) {
+      var kid = arguments[i];
+      if (kid == null) continue;
+      el.append(kid.nodeType ? kid : document.createTextNode(kid));
+    }
+    return el;
+  }
+
+  var ICONS = {
+    edit: '<path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/>',
+    trash: '<polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>',
+    check: '<polyline points="20 6 9 17 4 12"/>',
+    x: '<path d="M18 6 6 18M6 6l12 12"/>'
+  };
+  function icon(name) {
+    var s = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    s.setAttribute('viewBox', '0 0 24 24');
+    s.setAttribute('width', '18');
+    s.setAttribute('height', '18');
+    s.setAttribute('fill', 'none');
+    s.setAttribute('stroke', 'currentColor');
+    s.setAttribute('stroke-width', '2');
+    s.setAttribute('stroke-linecap', 'round');
+    s.setAttribute('stroke-linejoin', 'round');
+    s.setAttribute('aria-hidden', 'true');
+    s.innerHTML = ICONS[name];
+    return s;
+  }
+
+  /* ---------- Storage ---------- */
+  function loadContacts() {
+    try {
+      var raw = localStorage.getItem(KEY);
+      if (raw) {
+        var arr = JSON.parse(raw);
+        if (Array.isArray(arr)) {
+          return arr.filter(function (c) {
+            return c && typeof c.id === 'string' && typeof c.name === 'string' && typeof c.phone === 'string';
+          });
+        }
+      }
+    } catch (e) { /* storage unavailable or corrupted */ }
+    return memoryStore ? memoryStore.slice() : [];
+  }
+  function persist() {
+    try { localStorage.setItem(KEY, JSON.stringify(contacts)); }
+    catch (e) { memoryStore = contacts.slice(); }
+  }
+
+  /* ---------- State ---------- */
+  var contacts = loadContacts();
+  var editingId = null;
+  var query = '';
+  var justAddedId = null;
+  var toastTimer = null;
+
+  function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+  function digitsOf(v) { return v.replace(/\D/g, ''); }
+  function cleanName(v) { return v.trim().replace(/\s+/g, ' '); }
+  function initial(name) { return (Array.from(name.trim())[0] || '?').toUpperCase(); }
+  function hash(name) {
+    var t = 0;
+    for (var i = 0; i < name.length; i++) t += name.charCodeAt(i);
+    return t;
+  }
+
+  /* ---------- Validation ---------- */
+  function validate(name, phone, ignoreId) {
+    var errors = {};
+    var n = cleanName(name);
+    var p = phone.trim();
+
+    if (!n) errors.name = "Enter the contact's full name.";
+    else if (Array.from(n).length < 2) errors.name = 'Full name needs at least 2 characters.';
+
+    if (!p) {
+      errors.phone = 'Enter a phone number.';
+    } else if (!/^\+?[\d\s\-().]+$/.test(p)) {
+      errors.phone = 'Use digits, spaces, dashes or brackets, with an optional + at the start.';
+    } else {
+      var d = digitsOf(p);
+      if (d.length < 7 || d.length > 15) {
+        errors.phone = 'A phone number needs 7 to 15 digits.';
+      } else {
+        var dup = contacts.find(function (c) { return c.id !== ignoreId && digitsOf(c.phone) === d; });
+        if (dup) errors.phone = dup.name + ' is already saved with this number.';
+      }
+    }
+    return errors;
+  }
+  function showError(input, errEl, msg) {
+    errEl.textContent = msg || '';
+    input.setAttribute('aria-invalid', msg ? 'true' : 'false');
+  }
+
+  /* ---------- Toast ---------- */
+  function hideToast() {
+    clearTimeout(toastTimer);
+    $('#toast').classList.remove('show');
+  }
+  function notify(msg, undoFn) {
+    $('#sr-live').textContent = msg;
+    var t = $('#toast');
+    t.textContent = '';
+    t.appendChild(h('span', {}, msg));
+    if (undoFn) {
+      t.appendChild(h('button', { type: 'button', class: 'toast-btn', onclick: undoFn }, 'Undo'));
+    }
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(hideToast, undoFn ? 6000 : 3000);
+  }
+
+  /* ---------- Create ---------- */
+  var form = $('#add-form');
+  var nameIn = $('#name'), phoneIn = $('#phone');
+  var nameErr = $('#name-error'), phoneErr = $('#phone-error');
+
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var errs = validate(nameIn.value, phoneIn.value, null);
+    showError(nameIn, nameErr, errs.name);
+    showError(phoneIn, phoneErr, errs.phone);
+    if (errs.name) { nameIn.focus(); return; }
+    if (errs.phone) { phoneIn.focus(); return; }
+
+    var c = { id: uid(), name: cleanName(nameIn.value), phone: phoneIn.value.trim(), createdAt: Date.now() };
+    contacts.unshift(c);
+    persist();
+    query = '';
+    $('#search').value = '';
+    editingId = null;
+    justAddedId = c.id;
+    render();
+    form.reset();
+    nameIn.focus();
+    notify('Saved ' + c.name + '.');
+  });
+  nameIn.addEventListener('input', function () { showError(nameIn, nameErr, ''); });
+  phoneIn.addEventListener('input', function () { showError(phoneIn, phoneErr, ''); });
+
+  /* ---------- Update ---------- */
+  function focusRowButton(id, action) {
+    var b = document.querySelector('[data-id="' + id + '"] [data-action="' + action + '"]');
+    if (b) b.focus();
+  }
+  function startEdit(id) {
+    editingId = id;
+    render();
+    var i = document.querySelector('[data-id="' + id + '"] input');
+    if (i) { i.focus(); i.select(); }
+  }
+
+  /* ---------- Delete ---------- */
+  function removeContact(id) {
+    var i = contacts.findIndex(function (c) { return c.id === id; });
+    if (i < 0) return;
+    var gone = contacts.splice(i, 1)[0];
+    if (editingId === id) editingId = null;
+    persist();
+    render();
+    $('#list-title').focus();
+    notify('Deleted ' + gone.name + '.', function () {
+      contacts.splice(Math.min(i, contacts.length), 0, gone);
+      persist();
+      render();
+      hideToast();
+      $('#sr-live').textContent = 'Restored ' + gone.name + '.';
+    });
+  }
+
+  /* ---------- Read / render ---------- */
+  function emptyState(title, text) {
+    return h('div', { class: 'empty' },
+      h('p', { class: 'empty-title' }, title),
+      h('p', { class: 'empty-text' }, text));
+  }
+
+  function viewRow(c, flash) {
+    var li = h('li', { class: 'row' + (flash ? ' just-added' : ''), 'data-id': c.id });
+    li.appendChild(h('div', { class: 'avatar av-' + (hash(c.name) % 5), 'aria-hidden': 'true' }, initial(c.name)));
+    li.appendChild(h('div', { class: 'name', title: c.name }, c.name));
+    li.appendChild(h('a', { class: 'phone', href: 'tel:' + c.phone.replace(/[^\d+]/g, '') }, c.phone));
+    li.appendChild(h('div', { class: 'actions' },
+      h('button', {
+        type: 'button', class: 'btn-ghost', 'data-action': 'edit',
+        'aria-label': 'Edit ' + c.name, onclick: function () { startEdit(c.id); }
+      }, icon('edit'), h('span', { class: 'btn-label' }, 'Edit')),
+      h('button', {
+        type: 'button', class: 'btn-ghost danger', 'data-action': 'delete',
+        'aria-label': 'Delete ' + c.name, onclick: function () { removeContact(c.id); }
+      }, icon('trash'), h('span', { class: 'btn-label' }, 'Delete'))
+    ));
+    return li;
+  }
+
+  function editRow(c) {
+    var li = h('li', { class: 'row editing', 'data-id': c.id });
+    var nameI = h('input', { class: 'input', type: 'text', value: c.name, 'aria-label': 'Full name', 'aria-describedby': 'edit-name-error', 'aria-invalid': 'false', autocomplete: 'off' });
+    var nameE = h('p', { class: 'error', id: 'edit-name-error' });
+    var phoneI = h('input', { class: 'input', type: 'tel', inputmode: 'tel', value: c.phone, 'aria-label': 'Phone number', 'aria-describedby': 'edit-phone-error', 'aria-invalid': 'false', autocomplete: 'off' });
+    var phoneE = h('p', { class: 'error', id: 'edit-phone-error' });
+
+    function commit() {
+      var errs = validate(nameI.value, phoneI.value, c.id);
+      showError(nameI, nameE, errs.name);
+      showError(phoneI, phoneE, errs.phone);
+      if (errs.name) { nameI.focus(); return; }
+      if (errs.phone) { phoneI.focus(); return; }
+      c.name = cleanName(nameI.value);
+      c.phone = phoneI.value.trim();
+      persist();
+      editingId = null;
+      render();
+      focusRowButton(c.id, 'edit');
+      notify('Updated ' + c.name + '.');
+    }
+    function cancel() {
+      editingId = null;
+      render();
+      focusRowButton(c.id, 'edit');
+    }
+    [[nameI, nameE], [phoneI, phoneE]].forEach(function (pair) {
+      pair[0].addEventListener('keydown', function (ev) {
+        if (ev.key === 'Enter') { ev.preventDefault(); commit(); }
+        else if (ev.key === 'Escape') { ev.preventDefault(); cancel(); }
+      });
+      pair[0].addEventListener('input', function () { showError(pair[0], pair[1], ''); });
+    });
+
+    li.appendChild(h('div', { class: 'avatar av-' + (hash(c.name) % 5), 'aria-hidden': 'true' }, initial(c.name)));
+    li.appendChild(h('div', { class: 'fields' },
+      h('div', {}, nameI, nameE),
+      h('div', {}, phoneI, phoneE)));
+    li.appendChild(h('div', { class: 'actions' },
+      h('button', { type: 'button', class: 'btn-solid', onclick: commit }, icon('check'), 'Save changes'),
+      h('button', { type: 'button', class: 'btn-ghost', onclick: cancel }, icon('x'), 'Cancel')
+    ));
+    return li;
+  }
+
+  function render() {
+    var flashId = justAddedId;
+    justAddedId = null;
+
+    $('#count').textContent = contacts.length;
+    $('#search-wrap').hidden = contacts.length === 0;
+
+    var list = $('#list');
+    list.textContent = '';
+
+    if (!contacts.length) {
+      list.appendChild(emptyState('No contacts yet', 'Add a name and number above and it will show up here.'));
+      return;
+    }
+
+    var q = query.trim().toLowerCase();
+    var qd = digitsOf(q);
+    var shown = contacts.filter(function (c) {
+      if (!q) return true;
+      if (c.name.toLowerCase().indexOf(q) !== -1) return true;
+      return qd && digitsOf(c.phone).indexOf(qd) !== -1;
+    });
+
+    if (!shown.length) {
+      list.appendChild(emptyState('No matches', 'Nothing found for \u201C' + query.trim() + '\u201D. Try a different name or number.'));
+      return;
+    }
+
+    list.appendChild(h('div', { class: 'head-row', 'aria-hidden': 'true' },
+      h('span', {}, ''), h('span', {}, 'Name'), h('span', {}, 'Phone number'), h('span', {}, '')));
+
+    var ul = h('ul', { class: 'rows' });
+    shown.forEach(function (c) {
+      ul.appendChild(c.id === editingId ? editRow(c) : viewRow(c, c.id === flashId));
+    });
+    list.appendChild(ul);
+  }
+
+  $('#search').addEventListener('input', function (e) {
+    query = e.target.value;
+    editingId = null;
+    render();
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>
