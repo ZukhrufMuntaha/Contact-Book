@@ -445,7 +445,7 @@
 <header class="band">
   <div class="wrap">
     <h1>Contact book</h1>
-    <p class="lead">Add a name and phone number. Saved contacts appear below, where you can edit or delete them.</p>
+    <p class="lead">Add a name and phone number to get started.</p>
 
     <form id="add-form" novalidate>
       <div class="field">
@@ -475,7 +475,6 @@
       </div>
     </div>
     <div class="panel" id="list"></div>
-    <p class="note">Private by design: your contacts are stored only in this browser, on this device.</p>
   </section>
 </main>
 
@@ -485,9 +484,6 @@
 <script>
 (function () {
   'use strict';
-
-  var KEY = 'contact-book:v1';
-  var memoryStore = null;
 
   function $(sel) { return document.querySelector(sel); }
 
@@ -530,34 +526,33 @@
     return s;
   }
 
-  /* ---------- Storage ---------- */
-  function loadContacts() {
-    try {
-      var raw = localStorage.getItem(KEY);
-      if (raw) {
-        var arr = JSON.parse(raw);
-        if (Array.isArray(arr)) {
-          return arr.filter(function (c) {
-            return c && typeof c.id === 'string' && typeof c.name === 'string' && typeof c.phone === 'string';
-          });
-        }
-      }
-    } catch (e) { /* storage unavailable or corrupted */ }
-    return memoryStore ? memoryStore.slice() : [];
+  /* ---------- API ---------- */
+  var API = '/api/contacts';
+  function api(method, path, body) {
+    return fetch(API + (path || ''), {
+      method: method,
+      headers: body ? { 'Content-Type': 'application/json' } : undefined,
+      body: body ? JSON.stringify(body) : undefined
+    }).then(function (res) {
+      return res.json().catch(function () { return {}; }).then(function (data) {
+        if (!res.ok) throw new ApiError(data && data.error ? data.error : 'Something went wrong. Please try again.');
+        return data;
+      });
+    }).catch(function (err) {
+      if (err instanceof ApiError) throw err;
+      throw new ApiError('Could not reach the server. Check your connection and try again.');
+    });
   }
-  function persist() {
-    try { localStorage.setItem(KEY, JSON.stringify(contacts)); }
-    catch (e) { memoryStore = contacts.slice(); }
-  }
+  function ApiError(msg) { this.message = msg; }
+  ApiError.prototype = Object.create(Error.prototype);
 
   /* ---------- State ---------- */
-  var contacts = loadContacts();
+  var contacts = [];
   var editingId = null;
   var query = '';
   var justAddedId = null;
   var toastTimer = null;
 
-  function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
   function digitsOf(v) { return v.replace(/\D/g, ''); }
   function cleanName(v) { return v.trim().replace(/\s+/g, ' '); }
   function initial(name) { return (Array.from(name.trim())[0] || '?').toUpperCase(); }
@@ -627,6 +622,7 @@
   var nameIn = $('#name'), phoneIn = $('#phone');
   var nameErr = $('#name-error'), phoneErr = $('#phone-error');
 
+  var submitBtn = form.querySelector('.btn-primary');
   form.addEventListener('submit', function (e) {
     e.preventDefault();
     var errs = validate(nameIn.value, phoneIn.value, null);
@@ -635,17 +631,24 @@
     if (errs.name) { nameIn.focus(); return; }
     if (errs.phone) { phoneIn.focus(); return; }
 
-    var c = { id: uid(), name: cleanName(nameIn.value), phone: normalizePhone(phoneIn.value).display, createdAt: Date.now() };
-    contacts.unshift(c);
-    persist();
-    query = '';
-    $('#search').value = '';
-    editingId = null;
-    justAddedId = c.id;
-    render();
-    form.reset();
-    nameIn.focus();
-    notify('Saved ' + c.name + '.');
+    submitBtn.disabled = true;
+    api('POST', '', { name: cleanName(nameIn.value), phone: phoneIn.value.trim() })
+      .then(function (c) {
+        contacts.unshift(c);
+        query = '';
+        $('#search').value = '';
+        editingId = null;
+        justAddedId = c.id;
+        render();
+        form.reset();
+        nameIn.focus();
+        notify('Saved ' + c.name + '.');
+      })
+      .catch(function (err) {
+        if (/phone/i.test(err.message) || /already saved/i.test(err.message)) showError(phoneIn, phoneErr, err.message);
+        else notify(err.message);
+      })
+      .then(function () { submitBtn.disabled = false; });
   });
   nameIn.addEventListener('input', function () { showError(nameIn, nameErr, ''); });
   phoneIn.addEventListener('input', function () { showError(phoneIn, phoneErr, ''); });
@@ -666,18 +669,30 @@
   function removeContact(id) {
     var i = contacts.findIndex(function (c) { return c.id === id; });
     if (i < 0) return;
-    var gone = contacts.splice(i, 1)[0];
+    var gone = contacts[i];
+    contacts.splice(i, 1);
     if (editingId === id) editingId = null;
-    persist();
     render();
     $('#list-title').focus();
-    notify('Deleted ' + gone.name + '.', function () {
-      contacts.splice(Math.min(i, contacts.length), 0, gone);
-      persist();
-      render();
-      hideToast();
-      $('#sr-live').textContent = 'Restored ' + gone.name + '.';
-    });
+
+    api('DELETE', '?id=' + encodeURIComponent(id))
+      .then(function () {
+        notify('Deleted ' + gone.name + '.', function () {
+          api('POST', '', { name: gone.name, phone: gone.phone })
+            .then(function (restored) {
+              contacts.splice(Math.min(i, contacts.length), 0, restored);
+              render();
+              hideToast();
+              $('#sr-live').textContent = 'Restored ' + restored.name + '.';
+            })
+            .catch(function (err) { notify(err.message); });
+        });
+      })
+      .catch(function (err) {
+        contacts.splice(i, 0, gone);
+        render();
+        notify(err.message);
+      });
   }
 
   /* ---------- Read / render ---------- */
@@ -718,13 +733,22 @@
       showError(phoneI, phoneE, errs.phone);
       if (errs.name) { nameI.focus(); return; }
       if (errs.phone) { phoneI.focus(); return; }
-      c.name = cleanName(nameI.value);
-      c.phone = normalizePhone(phoneI.value).display;
-      persist();
-      editingId = null;
-      render();
-      focusRowButton(c.id, 'edit');
-      notify('Updated ' + c.name + '.');
+
+      saveBtn.disabled = true;
+      api('PUT', '?id=' + encodeURIComponent(c.id), { name: cleanName(nameI.value), phone: phoneI.value.trim() })
+        .then(function (updated) {
+          c.name = updated.name;
+          c.phone = updated.phone;
+          editingId = null;
+          render();
+          focusRowButton(c.id, 'edit');
+          notify('Updated ' + c.name + '.');
+        })
+        .catch(function (err) {
+          saveBtn.disabled = false;
+          if (/phone/i.test(err.message) || /already saved/i.test(err.message)) showError(phoneI, phoneE, err.message);
+          else notify(err.message);
+        });
     }
     function cancel() {
       editingId = null;
@@ -743,8 +767,9 @@
     li.appendChild(h('div', { class: 'fields' },
       h('div', {}, nameI, nameE),
       h('div', {}, phoneI, phoneE)));
+    var saveBtn = h('button', { type: 'button', class: 'btn-solid', onclick: function () { commit(); } }, icon('check'), 'Save changes');
     li.appendChild(h('div', { class: 'actions' },
-      h('button', { type: 'button', class: 'btn-solid', onclick: commit }, icon('check'), 'Save changes'),
+      saveBtn,
       h('button', { type: 'button', class: 'btn-ghost', onclick: cancel }, icon('x'), 'Cancel')
     ));
     return li;
@@ -794,7 +819,20 @@
     render();
   });
 
-  render();
+  function loadInitial() {
+    $('#list').appendChild(emptyState('Loading contacts\u2026', 'Fetching the shared contact list.'));
+    api('GET', '')
+      .then(function (list) {
+        contacts = Array.isArray(list) ? list : [];
+        render();
+      })
+      .catch(function (err) {
+        $('#list').textContent = '';
+        $('#list').appendChild(emptyState('Could not load contacts', err.message));
+        notify(err.message);
+      });
+  }
+  loadInitial();
 })();
 </script>
 </body>

@@ -1,37 +1,52 @@
 # Contact Book
 
-A simple and responsive contact management web app for saving and organizing names and phone numbers. Add a contact, search your saved contacts, and easily edit or delete them whenever needed.
+A shared contact book: everyone who opens the link sees the same list. Add, search, edit and delete contacts, backed by Upstash Redis.
 
-**Live Demo:** [Contact Book](https://contact-book-git-main-self-0545.vercel.app/)
+**Live demo:** https://contact-book-git-main-self-0545.vercel.app/
 
 ## Features
 
-* Add contacts with a full name and phone number
-* Validate Pakistani phone number formats
-* Detect duplicate phone numbers
-* Search contacts by name or number
-* Edit existing contacts
-* Delete contacts with an undo option
-* Responsive design for mobile and desktop
-* Automatic light and dark mode
+- Add a contact with full name and phone number
+- Phone format validation, with duplicate number detection
+- Search by name or number
+- Edit in place (`Enter` to save, `Esc` to cancel)
+- Delete with a 6-second Undo
+- Same shared list for every visitor, on any device
+- Works on mobile and desktop, with automatic light and dark mode
 
-## Phone Number Format
+## Phone number format
 
-The app supports these phone number formats:
+| Format | Example |
+| --- | --- |
+| 11 digits | `0300 1234567` |
+| `+` followed by 12 digits (any country code) | `+923001234567`, `+933001234567` |
 
-* `0300 1234567`
-* `+923001234567`
+## Project structure
 
-## Data Storage
+```
+├── index.html        # front end (HTML, CSS, JS)
+├── api/contacts.js   # serverless API: GET, POST, PUT, DELETE
+├── package.json
+└── README.md
+```
 
-Contacts are stored using your browser's `localStorage`. Your saved contacts remain available after refreshing the page, but they stay on the same browser and device and are not shared with other users.
+## Deploy to Vercel
 
-## Tech Stack
+1. Push this folder to a GitHub repository.
+2. Import the repo at [vercel.com/new](https://vercel.com/new). Framework Preset: **Other**.
+3. In the project, go to **Storage → Marketplace Database Providers → Upstash**, create a Redis database, and connect it to the project. Vercel adds the connection details as environment variables automatically (their exact names depend on the prefix you choose when connecting — `api/contacts.js` reads `UPSTASH_REDIS_REST_KV_REST_API_URL` and `UPSTASH_REDIS_REST_KV_REST_API_TOKEN`; check **Settings → Environment Variables** and adjust those two names in the code if yours differ).
+4. Deploy (or redeploy, if it already deployed before the database was connected).
 
-Built with:
+## Run locally
 
-* HTML
-* CSS
-* JavaScript
+```bash
+npm i -g vercel
+vercel link          # link this folder to your Vercel project
+vercel env pull       # pulls the Upstash environment variables
+npm install
+vercel dev
+```
 
-No frameworks, backend, or external dependencies are required.
+## How data is stored
+
+Contacts are stored in an Upstash Redis database as a single shared list, so every visitor sees the same contacts in real time.
